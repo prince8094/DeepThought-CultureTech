@@ -1,38 +1,21 @@
-# Methodology & Proposal: 1000 ICP-Qualified Companies in One Month  
-## DeepThought Business Analytics Internship Submission  
+# DeepThought: 1000-Company Scale-Up Methodology & QA Architecture
 
----
+## 1. Top-of-Funnel Sourcing Architecture
+To achieve a final yield of 1,000 qualified Federer companies, we must source an initial universe of ~4,000 MSMEs. 
+* **Primary Structured Sources:** DSIR R&D Directory (strongest C3/C4 signal), Chemexcil Export Data, PLI Scheme Beneficiary lists.
+* **Secondary Unstructured Sources:** ZaubaCorp / MCA Data (filtered by target NIC codes like 20119 for specialty chemicals, and paid-up capital limits to exclude >500Cr entities).
+* **Target:** 4,000 domains deduplicated via fuzzy matching.
 
-## Part 1: Advanced Sourcing Methods (Beyond Google)
+## 2. Scraper & Processing Architecture
+* **Tools:** Python, `Playwright` (for JavaScript-heavy sites), `BeautifulSoup`, and `Scikit-learn`.
+* **Process:** The scraper navigates to the Homepage, About Us, and Products pages, concatenating the text up to an 8k token limit. 
+* **Pre-Filtering (ML):** We apply a K-Means clustering algorithm on the scraped "Products" text using TF-IDF vectorization. This mathematically isolates specialty manufacturers (e.g., "recombinant", "oligonucleotide", "cryogenic") from commodity traders, stripping out ~40% of the noise before LLM scoring.
 
-Finding true Federer profiles requires querying structured databases that naturally filter for differentiation (C3) and growth (C6).
+## 3. AI Scoring Prompt & Pipeline
+* **LLM Integration:** Claude 3.5 Sonnet API via JSON-mode.
+* **Prompt Logic:** The LLM is strictly instructed *not* to infer. If a capability is not explicitly written in the scraped text, it scores a 0.
+* **Exclusion Logic:** Immediate auto-fail if the text contains: "distributor", "authorized dealer", "subsidiary of", "wholly owned by", or "group company".
 
----
-
-### 1. DSIR (Department of Scientific & Industrial Research) R&D Directory
-
-**Why it works:**  
-DSIR certification requires a company to prove they have a dedicated, functioning R&D lab. This is an immediate, high-fidelity signal for C3 (Differentiated) and C4 (Technical DM).
-
-**Limitations:**  
-Misses newer bootstrapped startups; PDF-heavy formatting requires parsing.
-
----
-
-### 2. Chemexcil & Pharmexcil Export Registries
-
-**Why it works:**  
-Companies exporting specialty chemicals or complex APIs to regulated markets (US/EU) must meet stringent quality standards. Presence here strongly correlates with C5 (Tailwinds) and C1 (In-house Manufacturing).
-
-**Limitations:**  
-Mixes actual manufacturers with pure merchant traders. Requires cross-referencing NIC codes.
-
----
-
-### 3. Unsupervised ML on MCA/ZaubaCorp Data (Custom Approach)
-
-**Why it works:**  
-Leveraging Python and scikit-learn, bulk NIC code data (e.g., Code 20119 - Manufacturing of other basic chemicals) can be analyzed using K-Means clustering on company product descriptions. This enables scalable identification of “specialty/custom” vs “bulk/commodity” businesses.
-
-**Limitations:**  
-Requires clean text data, which MCA filings often lack. Must be enriched with scraped website data.
+## 4. Quality Assurance (QA) Process
+* **Programmatic QA:** Any company scoring a perfect "Strong" on C3 (Differentiation) but showing zero C6 (Growth) signals is automatically flagged for manual review, as this often indicates a stale/dormant patent holder rather than an active Federer.
+* **Human-in-the-Loop:** 100% of "Borderline" scores (40-59 range) undergo manual website verification. 20% of "Strong Pass" scores are spot-checked to ensure the LLM did not hallucinate manufacturing capabilities for a CRO/testing lab.
